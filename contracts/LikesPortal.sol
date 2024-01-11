@@ -48,11 +48,12 @@ contract LikesPortal {
         console.log("%s deu joinha para o conteudo %s", msg.sender, web3Contents[contentId].url);
     }
 
-    function getTotalLikes(uint contentId) public view {
+    function getTotalLikes(uint contentId) public view returns(uint256) {
         console.log("Temos um total de %d joinhas para o conteudo %s", 
             web3Contents[contentId].totalLikes, 
             web3Contents[contentId].url
         );
+        return web3Contents[contentId].totalLikes;
     }
 
 }
