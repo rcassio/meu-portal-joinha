@@ -6,7 +6,7 @@ import abi from "./utils/LikesPortal.json";
 export default function App() {
   const [currentAccount, setCurrentAccount] = useState("");
 
-  const contractAddress = "0xcDA91faF810bAEe4660AC0E04141B27A95960281";
+  const contractAddress = "0x6BA431f58aDe66FD7eb120015E2c48125DDdFC46";
   /**
    * Cria uma variável para referenciar o conteúdo ABI!
    */
@@ -45,7 +45,7 @@ export default function App() {
       const { ethereum } = window;
 
       if (!ethereum) {
-        alert("MetaMask encontrada!");
+        alert("MetaMask não encontrada!");
         return;
       }
 
@@ -63,12 +63,21 @@ export default function App() {
       const { ethereum } = window;
 
       if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
+        //const provider = new ethers.providers.Web3Provider(ethereum);
+        const provider = new ethers.BrowserProvider(ethereum);
+        const signer = await provider.getSigner();
         const likePortalContract = new ethers.Contract(contractAddress, contractABI, signer);
 
-        let count = await likePortalContract.getTotalLikes();
-        console.log("Recuperado o número de joinhas...", count.toNumber());
+        let count;
+        count = await likePortalContract.getTotalLikes(0);
+        console.log("Recuperado o número de joinhas...", count);
+
+        const likeTxn = await likePortalContract.like(0);
+        console.log("Minerando um novo joinha...", likeTxn.hash);
+        await likeTxn.wait();
+        count = await likePortalContract.getTotalLikes(0);
+        console.log("Total de joinhas atualizado...", count);
+
       } else {
         console.log("Objeto Ethereum não encontrado!");
       }

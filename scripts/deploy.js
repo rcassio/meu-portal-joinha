@@ -11,6 +11,14 @@ const main = async () => {
     const portal = await Token.waitForDeployment();
   
     console.log("LikesPortal address: ", portal.target);
+
+    //await portal.addContent(
+    //    "https://youtu.be/LLfG5qnaJZU?si=-ul80jTy_jPETliM",
+    //    ["DAO", "SMART_CONTRACT"]
+    //);
+
+    //let likeCounts = await portal.getTotalLikes(0);
+    //console.log(`Total de Likes: ${likeCounts}`);
   };
   
   main().catch((error) => {
