@@ -5,18 +5,30 @@ import "hardhat/console.sol";
 
 contract LikesPortal {
     
+    struct Like {
+        address liker;
+        uint256 timestamp;
+        string message;
+    }
+
     struct Content {
         string url;
         string[] labels;
-        uint totalLikes;
+        uint256 totalLikes;
     }
 
-    mapping (uint => Content) web3Contents;
-    mapping (uint => address[]) whoLikes;
-    uint nextContentId;
+    mapping (uint256 => Content) web3Contents;
+    mapping (uint256 => Like[]) whoLikes;
+    mapping (address => uint256) lastLikedAt;
+    uint256 nextContentId;
 
-    constructor() {
+    uint256 private seed;
+
+    event NewLike(address indexed from, uint256 timestamp, string message);
+
+    constructor() payable {
         console.log("Deploy do contrato feito com sucesso!");
+        seed = (block.timestamp + block.difficulty) % 100;
     }
 
     function addContent(string memory _url, string[] memory _labels) public {
@@ -30,25 +42,50 @@ contract LikesPortal {
         nextContentId++;
     }
 
-    function listContent(uint contentId) public view {
+    function listContent(uint256 contentId) public view returns (Like[] memory) {
+        console.log(".......... listContent ..........");
         console.log("Lista de quem gostou do conteudo %s", web3Contents[contentId].url);
-        address[] memory lista = whoLikes[contentId]; 
+        Like[] memory lista = whoLikes[contentId]; 
+        console.log("tamanho de: %d", lista.length);
         for(uint i=0; i < lista.length; i++) {
             console.log(
                 "indice: %d do endereco %s deu um joinha no conteudo",
                 i, 
-                lista[i]
+                lista[i].liker
             );
         }
+        return lista;
     }
 
-    function like(uint contentId) public {
+    function like(uint256 contentId) public {
+        console.log(".......... like ..........");
+        require (lastLikedAt[msg.sender] + 30 seconds < block.timestamp, "Espere 30 segundos para o proximo joinha!!!");
+        lastLikedAt[msg.sender] = block.timestamp;
+
         web3Contents[contentId].totalLikes++;
-        whoLikes[contentId].push(msg.sender); 
-        console.log("%s deu joinha para o conteudo %s", msg.sender, web3Contents[contentId].url);
+        Like memory _like = Like(msg.sender, block.timestamp, web3Contents[contentId].url);
+        whoLikes[contentId].push(_like); 
+
+        seed = (block.difficulty + block.timestamp + seed) % 100;
+        console.log("# randomico gerado: %d", seed);
+
+        if (seed <= 50) {
+            console.log("%s ganhou!", msg.sender);
+        }
+
+        uint256 prizeAmount = 0.0001 ether;
+        require(
+            prizeAmount <= address(this).balance,
+            "Tentando sacar mais dinheiro que o contrato possui."
+        );
+        (bool success, ) = (msg.sender).call{value: prizeAmount}("");
+        require(success, "Falhou em sacar dinheiro do contrato.");
+
+        emit NewLike(_like.liker, _like.timestamp, web3Contents[contentId].url);
     }
 
-    function getTotalLikes(uint contentId) public view returns(uint256) {
+    function getTotalLikes(uint256 contentId) public view returns(uint256) {
+        console.log(".......... getTotalLikes ..........");
         console.log("Temos um total de %d joinhas para o conteudo %s", 
             web3Contents[contentId].totalLikes, 
             web3Contents[contentId].url
