@@ -6,7 +6,7 @@ import abi from "./utils/LikesPortal.json";
 export default function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [allLikes, setAllLikes] = useState([]);
-  const contractAddress = "0xA2E17164072489A8Fc6aF07014C9CEfbdca7a24a";
+  const contractAddress = "0xBeaE980e0869F62eEd6f22a0efb339EA5eD8DE78";
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -104,13 +104,12 @@ export default function App() {
         /*
          * Apenas precisamos do endereço, data/horário, e mensagem na nossa tela, então vamos selecioná-los
          */
-        let likesCleaned = [];
-        lista.forEach(like => {
-          likesCleaned.push({
+        const likesCleaned = lista.map(like => {
+          return {
             address: like.liker,
             timestamp: new Date(Number(like.timestamp)*1000),
             message: like.message + " recebeu um joinha!!!"
-          });
+          };
         });
 
 
@@ -127,8 +126,36 @@ export default function App() {
   }
 
 
-useEffect(() => {
+useEffect( async () => {
   checkIfWalletIsConnected();
+
+  let likePortalContract;
+
+  const onNewLike = (from, timestamp, message) => {
+    console.log("NewLike", from, timestamp, message);
+    setAllLikes(prevState => [
+      ...prevState,
+      {
+        address: from,
+        timestamp: new Date(Number(timestamp) * 1000),
+        message: message,
+      },
+    ]);
+  };
+
+  if (window.ethereum) {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+
+    likePortalContract = new ethers.Contract(contractAddress, contractABI, signer);
+    likePortalContract.on("NewLike", onNewLike);
+  }
+
+  return () => {
+    if (likePortalContract) {
+      likePortalContract.off("NewLike", onNewLike);
+    }
+  };
 }, [])
 
 
